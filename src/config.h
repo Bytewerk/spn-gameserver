@@ -22,11 +22,20 @@ namespace config {
 	// Radius around the head of a snake in which food is eaten
 	static const float_t     SNAKE_EATING_RADIUS     = 2.0;
 
-	// Steps that a snake moves while boosting (normal speed = 1 step)
-	static const std::size_t SNAKE_BOOST_STEPS       = 3;
+	// Factor by that the Snake’s speed increases while boosting
+	static const float_t     SNAKE_BOOST_SPEEDUP     = 3.0;
 
 	// Distance per normal movement step
 	static const float_t     SNAKE_DISTANCE_PER_STEP = 1.0;
+
+	// A factor to apply to the velocity of each segment each frame
+	static const float_t     SNAKE_FRICTION_FACTOR   = 0.99;
+
+	// Spring constant of the springs between the segments
+	static const float_t     SNAKE_SPRING_CONSTANT   = 0.200;
+
+	// Base value for the distance between segments
+	static const float_t     SNAKE_BASE_DISTANCE     = 0.000;
 
 	// Distance multiplier for the Snake’s consume range. This is multiplied with
 	// the Snake’s segment radius.

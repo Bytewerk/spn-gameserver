@@ -43,7 +43,8 @@ void Snake::ensureSizeMatchesMass(void)
 		const std::shared_ptr<Segment> refSegment = m_segments[curLen-1];
 		for(std::size_t i = 0; i < (targetLen - curLen); i++) {
 			std::shared_ptr<Segment> segment = std::make_shared<Segment>();
-			*segment = *refSegment;
+			segment->pos = refSegment->pos;
+			segment->vel = refSegment->vel;
 
 			m_segments.push_back(segment);
 		}
@@ -54,6 +55,23 @@ void Snake::ensureSizeMatchesMass(void)
 
 	// update segment radius
 	m_segmentRadius = std::sqrt(m_mass) / 2;
+}
+
+Vector Snake::calculateDeltaV(
+		const std::shared_ptr<Segment> &seg1,
+		const std::shared_ptr<Segment> &seg2)
+{
+	float_t dist = seg1->pos.distanceTo(seg2->pos);
+
+	if(dist == 0) {
+		return Vector(0, 0);
+	}
+
+	float_t distErr = dist - config::SNAKE_BASE_DISTANCE;
+
+	Vector deltaV(seg2->pos - seg1->pos);
+	deltaV.normalizeToLength(distErr);
+	return deltaV * config::SNAKE_SPRING_CONSTANT;
 }
 
 float_t Snake::maxRotationPerStep(void)
@@ -70,6 +88,27 @@ void Snake::consume(const std::shared_ptr<Food>& food)
 
 std::size_t Snake::move(float_t targetAngle, bool boost)
 {
+	// increase step size while boosting
+	float_t speed_scale = 1.0f;
+	if(boost) {
+		speed_scale = config::SNAKE_BOOST_SPEEDUP;
+	}
+
+	// Step 0: unwrap all coordinates
+	for(std::size_t i = 0; i < m_segments.size(); i++) {
+		auto &seg = m_segments[i];
+		seg->pos = m_field->unwrapCoords(seg->pos, m_segments[0]->pos);
+	}
+
+	// Step 1: move all segments except the head forward by their velocity
+
+	for(std::size_t i = 1; i < m_segments.size(); i++) {
+		auto &seg = m_segments[i];
+		seg->pos += seg->vel;
+	}
+
+	// Step 2: calculate new head position
+
 	// calculate delta angle
 	float_t deltaAngle = targetAngle - m_heading;
 
@@ -88,26 +127,39 @@ std::size_t Snake::move(float_t targetAngle, bool boost)
 		deltaAngle = -maxDelta;
 	}
 
-	std::size_t oldSize = m_segments.size();
+	// calculate new head position
+	m_heading += deltaAngle;
+	Vector movementVector(config::SNAKE_DISTANCE_PER_STEP * speed_scale, 0.0f);
+	movementVector.rotate(m_heading * M_PI / 180);
 
-	// create multiple segments while boosting
-	std::size_t steps = 1;
-	if(boost) {
-		steps = config::SNAKE_BOOST_STEPS;
+	m_segments[0]->pos += movementVector;
+	m_segments[0]->vel = movementVector;
+
+	// Step 3: apply friction
+	// reduces the velocity by a configurable factor
+	for(std::size_t i = 0; i < m_segments.size(); i++) {
+		m_segments[i]->vel *= config::SNAKE_FRICTION_FACTOR;
 	}
 
-	// create new segments at head
-	for(std::size_t i = 0; i < steps; i++) {
-		// calculate new segment offset
-		m_heading += deltaAngle;
-		Vector movementVector(config::SNAKE_DISTANCE_PER_STEP, 0.0f);
-		movementVector.rotate(m_heading * M_PI / 180);
+	// Step 4: apply spring-mass network
+	// Simulates springs between the Snake segments, which cause the Snake to stay together.
+	// All segments except the head are influenced by this.
+	for(std::size_t i = 1; i < m_segments.size(); i++) {
+		Vector deltaV(0, 0);
 
-		// create new segment
-		std::shared_ptr<Segment> segment = std::make_shared<Segment>();
-		segment->pos = m_field->wrapCoords(m_segments[0]->pos + movementVector);
+		deltaV += calculateDeltaV(m_segments[i], m_segments[i-1]);
 
-		m_segments.push_front(segment);
+		if(i < m_segments.size()-1) {
+			deltaV += calculateDeltaV(m_segments[i], m_segments[i+1]);
+		}
+
+		m_segments[i]->vel += deltaV;
+	}
+
+	// Step N+1: wrap all coordinates
+	for(std::size_t i = 0; i < m_segments.size(); i++) {
+		auto &seg = m_segments[i];
+		seg->pos = m_field->wrapCoords(seg->pos);
 	}
 
 	// normalize heading
@@ -117,10 +169,7 @@ std::size_t Snake::move(float_t targetAngle, bool boost)
 		m_heading += 360;
 	}
 
-	// force size to previous size (removes end segments)
-	m_segments.resize(oldSize);
-
-	return steps; // == number of new segments at head
+	return m_segments.size(); // == number of new segments at head
 }
 
 const Snake::SegmentList& Snake::getSegments(void) const

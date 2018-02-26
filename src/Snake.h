@@ -18,7 +18,8 @@ class Snake
 {
 	public:
 		struct Segment {
-			Vector pos;
+			Vector pos; //!< Position
+			Vector vel; //!< Velocity
 			// more stuff like color?
 		};
 
@@ -43,6 +44,13 @@ class Snake
 		 * Updates the length of m_segments and calculates the current m_segmentRadius
 		 */
 		void ensureSizeMatchesMass(void);
+
+		/*!
+		 * Calculate how seg1 should move towards seg2 to keep the desired distance.
+		 */
+		Vector calculateDeltaV(
+				const std::shared_ptr<Segment> &seg1,
+				const std::shared_ptr<Segment> &seg2);
 
 	public:
 		/*!
