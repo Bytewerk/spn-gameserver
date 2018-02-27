@@ -8,6 +8,7 @@ Snake::Snake(Field *field)
 	: m_field(field), m_mass(1.0f), m_heading(0.0f)
 {
 	std::shared_ptr<Segment> segment = std::make_shared<Segment>();
+	segment->vel = Vector(0.1, 0);
 	m_segments.push_back(segment);
 
 	ensureSizeMatchesMass();
@@ -20,6 +21,8 @@ Snake::Snake(Field *field, const Vector &startPos, float_t start_mass,
 	// create the first segment manually
 	std::shared_ptr<Segment> segment = std::make_shared<Segment>();
 	segment->pos = startPos;
+	segment->vel = Vector(0.1, 0);
+	segment->vel.rotate(m_heading);
 
 	m_segments.push_back(segment);
 
@@ -30,7 +33,8 @@ Snake::Snake(Field *field, const Vector &startPos, float_t start_mass,
 void Snake::ensureSizeMatchesMass(void)
 {
 	std::size_t curLen = m_segments.size();
-	std::size_t targetLen = static_cast<std::size_t>(m_mass + 0.5);
+	std::size_t targetLen = static_cast<std::size_t>(
+			pow(m_mass, config::SNAKE_LENGTH_EXPONENT) + 0.5);
 
 	// ensure there are at least 2 segments to define movement direction
 	if(targetLen < 2) {
@@ -40,13 +44,15 @@ void Snake::ensureSizeMatchesMass(void)
 	if(curLen < targetLen) {
 		// segments have to be added:
 		// repeat the last segment until the new target length is reached
-		const std::shared_ptr<Segment> refSegment = m_segments[curLen-1];
+		std::shared_ptr<Segment> refSegment = m_segments[curLen-1];
 		for(std::size_t i = 0; i < (targetLen - curLen); i++) {
 			std::shared_ptr<Segment> segment = std::make_shared<Segment>();
-			segment->pos = refSegment->pos;
+			segment->pos = refSegment->pos - refSegment->vel;
 			segment->vel = refSegment->vel;
 
 			m_segments.push_back(segment);
+
+			refSegment = segment;
 		}
 	} else if(curLen > targetLen) {
 		// segments must be removed
@@ -97,7 +103,9 @@ std::size_t Snake::move(float_t targetAngle, bool boost)
 	// Step 0: unwrap all coordinates
 	for(std::size_t i = 0; i < m_segments.size(); i++) {
 		auto &seg = m_segments[i];
-		seg->pos = m_field->unwrapCoords(seg->pos, m_segments[0]->pos);
+		auto &ref = (i>0) ? m_segments[i-1] : m_segments[0];
+
+		seg->pos = m_field->unwrapCoords(seg->pos, ref->pos);
 	}
 
 	// Step 1: move all segments except the head forward by their velocity

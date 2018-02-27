@@ -29,13 +29,15 @@ namespace config {
 	static const float_t     SNAKE_DISTANCE_PER_STEP = 1.0;
 
 	// A factor to apply to the velocity of each segment each frame
-	static const float_t     SNAKE_FRICTION_FACTOR   = 0.99;
+	static const float_t     SNAKE_FRICTION_FACTOR   = 0.95;
 
 	// Spring constant of the springs between the segments
-	static const float_t     SNAKE_SPRING_CONSTANT   = 0.200;
+	static const float_t     SNAKE_SPRING_CONSTANT   = 0.500;
 
 	// Base value for the distance between segments
 	static const float_t     SNAKE_BASE_DISTANCE     = 0.000;
+
+	static const float_t     SNAKE_LENGTH_EXPONENT   = 0.8;
 
 	// Distance multiplier for the Snake’s consume range. This is multiplied with
 	// the Snake’s segment radius.
