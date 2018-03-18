@@ -2,7 +2,7 @@
 
 #include "LocalView.h"
 
-LocalView::LocalView(const Field *field, const Vector &center, float_t radius)
+LocalView::LocalView(const Field *field, const Eigen::Vector2f &center, float_t radius)
 	: m_field(field), m_center(center), m_radius(radius)
 {
 }

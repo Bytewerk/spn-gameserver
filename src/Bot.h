@@ -30,7 +30,7 @@ class Bot : public IdentifyableObject
 		 * Creates a new bot identified by the given name on the given playing
 		 * field.
 		 */
-		Bot(Field *field, const std::string &name, const Vector &startPos, float_t startHeading);
+		Bot(Field *field, const std::string &name, const Eigen::Vector2f &startPos, float_t startHeading);
 		~Bot();
 
 		/*!

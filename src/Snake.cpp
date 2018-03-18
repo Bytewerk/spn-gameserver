@@ -13,7 +13,7 @@ Snake::Snake(Field *field)
 	ensureSizeMatchesMass();
 }
 
-Snake::Snake(Field *field, const Vector &startPos, float_t start_mass,
+Snake::Snake(Field *field, const Eigen::Vector2f &startPos, float_t start_mass,
 		float_t start_heading)
 	: m_field(field), m_mass(start_mass), m_heading(start_heading)
 {
@@ -117,8 +117,11 @@ std::size_t Snake::move(float_t targetAngle, bool boost)
 	for(std::size_t i = 0; i < steps; i++) {
 		// calculate new segment offset
 		m_heading += deltaAngle;
-		Vector movementVector(config::SNAKE_DISTANCE_PER_STEP, 0.0f);
-		movementVector.rotate(m_heading * M_PI / 180);
+		auto heading_rad = m_heading * M_PI / 180;
+		Eigen::Vector2f movementVector {
+			config::SNAKE_DISTANCE_PER_STEP*cos(heading_rad),
+			config::SNAKE_DISTANCE_PER_STEP*sin(heading_rad)
+		};
 
 		headSegment->pos += movementVector;
 
@@ -126,9 +129,10 @@ std::size_t Snake::move(float_t targetAngle, bool boost)
 
 		// create new segments, if necessary
 		while(m_movedSinceLastSpawn > m_targetSegmentDistance) {
-			// vector from the first segment to the direction of the head
-			Vector newSegmentOffset = headSegment->pos - m_segments[0]->pos;
-			newSegmentOffset.normalizeToLength(m_targetSegmentDistance);
+			// vector from the first segment to the direction of the head			
+			Eigen::Vector2f newSegmentOffset = headSegment->pos - m_segments[0]->pos;
+			newSegmentOffset.normalize();
+			newSegmentOffset *= m_targetSegmentDistance;
 
 			m_movedSinceLastSpawn -= m_targetSegmentDistance;
 
@@ -173,7 +177,7 @@ const Snake::SegmentList& Snake::getSegments(void) const
 	return m_segments;
 }
 
-const Vector& Snake::getHeadPosition(void) const
+const Eigen::Vector2f& Snake::getHeadPosition(void) const
 {
 	return m_segments[0]->pos;
 }
@@ -185,13 +189,13 @@ float_t Snake::getSegmentRadius(void) const
 
 bool Snake::canConsume(const std::shared_ptr<Food> &food)
 {
-	const Vector &headPos = m_segments[0]->pos;
-	const Vector &foodPos = food->getPosition();
+	const Eigen::Vector2f &headPos = m_segments[0]->pos;
+	const Eigen::Vector2f &foodPos = food->getPosition();
 
 	float_t hx = headPos.x();
 	float_t hy = headPos.y();
 
-	Vector unwrappedFoodPos = m_field->unwrapCoords(foodPos, headPos);
+	Eigen::Vector2f unwrappedFoodPos = m_field->unwrapCoords(foodPos, headPos);
 	float_t fx = unwrappedFoodPos.x();
 	float_t fy = unwrappedFoodPos.y();
 
@@ -208,7 +212,7 @@ bool Snake::canConsume(const std::shared_ptr<Food> &food)
 #endif
 
 	// thorough range check
-	return headPos.squareDistanceTo(unwrappedFoodPos) < (maxRange*maxRange);
+	return (unwrappedFoodPos - headPos).squaredNorm() < (maxRange*maxRange);
 }
 
 void Snake::convertToFood(void) const

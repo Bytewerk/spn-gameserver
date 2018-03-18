@@ -3,11 +3,10 @@
 #include <set>
 #include <memory>
 #include <random>
-
+#include <Eigen/Geometry>
 #include "UpdateTracker.h"
 #include "GlobalView.h"
 
-#include "Vector.h"
 #include "Food.h"
 #include "Bot.h"
 
@@ -106,7 +105,7 @@ class Field
 		 * \param center       Center of the distribution circle.
 		 * \param radius       Radius of the distribution circle.
 		 */
-		void createDynamicFood(float_t totalValue, const Vector &center, float_t radius);
+		void createDynamicFood(float_t totalValue, const Eigen::Vector2f &center, float_t radius);
 
 		/*!
 		 * Wrap the coordinates of the given vector into the Fields unique area.
@@ -114,7 +113,7 @@ class Field
 		 * \param v    The vector to wrap.
 		 * \returns    A new vector containing the wrapped coordinates.
 		 */
-		Vector wrapCoords(const Vector &v) const;
+		Eigen::Vector2f wrapCoords(const Eigen::Vector2f &v) const;
 
 		/*!
 		 * Unwrap the coordinates of the given vector with respect to a reference
@@ -129,7 +128,7 @@ class Field
 		 * \param ref  The reference vector.
 		 * \returns    A new vector containing the unwrapped coordinates.
 		 */
-		Vector unwrapCoords(const Vector &v, const Vector &ref) const;
+		Eigen::Vector2f unwrapCoords(const Eigen::Vector2f &v, const Eigen::Vector2f &ref) const;
 
 		/*!
 		 * Print a text representation of the field for debugging to stdout.
@@ -139,7 +138,7 @@ class Field
 		/*!
 		 * Get the size of the field.
 		 */
-		Vector getSize(void) const;
+		Eigen::Vector2f getSize(void) const;
 
 		/*!
 		 * Get the global view of the field for fast collision checking.

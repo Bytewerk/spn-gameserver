@@ -43,7 +43,7 @@ class GlobalView
 
 		const Field *m_field;
 
-		std::size_t hashMapEntryFromVector(const Vector &vec);
+		std::size_t hashMapEntryFromVector(const Eigen::Vector2f &vec);
 
 		void normalizeHashMapCoord(long *coord, std::size_t range) const;
 
@@ -66,5 +66,5 @@ class GlobalView
 		 * \param radius    Radius of the LocalView.
 		 * \returns         A shared pointer to the new LocalView object.
 		 */
-		std::shared_ptr<LocalView> extractLocalView(const Vector &center, float_t radius) const;
+		std::shared_ptr<LocalView> extractLocalView(const Eigen::Vector2f &center, float_t radius) const;
 };

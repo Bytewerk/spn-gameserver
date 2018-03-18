@@ -9,7 +9,7 @@
 
 // Private methods
 
-std::size_t GlobalView::hashMapEntryFromVector(const Vector &vec)
+std::size_t GlobalView::hashMapEntryFromVector(const Eigen::Vector2f &vec)
 {
 	return m_hashMapSizeX * static_cast<std::size_t>(vec.y() / config::GLOBALVIEW_GRID_UNIT) +
 			static_cast<std::size_t>(vec.x() / config::GLOBALVIEW_GRID_UNIT);
@@ -81,7 +81,7 @@ void GlobalView::rebuild(const Field *field)
 	}
 }
 
-std::shared_ptr<LocalView> GlobalView::extractLocalView(const Vector &center, float_t radius) const
+std::shared_ptr<LocalView> GlobalView::extractLocalView(const Eigen::Vector2f &center, float_t radius) const
 {
 	if(!m_field) {
 		return NULL;

@@ -286,7 +286,7 @@ namespace msgpack {
 					o.pack_array(4);
 					o.pack(v.getGUID());
 
-					const Vector &pos = v.getPosition();
+					auto& pos = v.getPosition();
 					o.pack(pos.x());
 					o.pack(pos.y());
 

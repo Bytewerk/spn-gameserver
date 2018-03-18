@@ -2,8 +2,7 @@
 
 #include <deque>
 #include <memory>
-
-#include "Vector.h"
+#include <Eigen/Geometry>
 
 #include "types.h"
 
@@ -18,7 +17,7 @@ class Snake
 {
 	public:
 		struct Segment {
-			Vector pos;
+			Eigen::Vector2f pos;
 			// more stuff like color?
 		};
 
@@ -54,7 +53,7 @@ class Snake
 		 */
 		Snake(Field *field);
 
-		Snake(Field *field, const Vector &start_pos, float_t start_mass,
+		Snake(Field *field, const Eigen::Vector2f &start_pos, float_t start_mass,
 				float_t start_heading);
 
 		/*!
@@ -80,7 +79,7 @@ class Snake
 		 * Get the Snake's head position. This is a shortcut for getting the
 		 * position of the first segment.
 		 */
-		const Vector& getHeadPosition(void) const;
+		const Eigen::Vector2f& getHeadPosition(void) const;
 
 		/*!
 		 * Get the current segment radius.
