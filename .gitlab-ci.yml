@@ -1,6 +1,7 @@
 image: buildpack-deps:xenial
 
 before_script:
+- apt update
 - apt install -y lua-dev libeigen3-dev
 
 build:
