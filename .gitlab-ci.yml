@@ -1,5 +1,8 @@
 image: buildpack-deps:xenial
-before-script: "apt install -y lua-dev libeigen3-dev"
+
+before-script:
+- apt install -y lua-dev libeigen3-dev
+
 build:
     script: "./make.sh 2>&1 | tee build.log"
     artifacts:
