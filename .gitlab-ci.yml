@@ -1,0 +1,10 @@
+image: buildpack-deps:xenial
+before-script: "apt install -y lua-dev libeigen3-dev"
+build:
+    script: "./make.sh 2>&1 | tee build.log"
+    artifacts:
+        when: always
+        expire_in: 1 week
+        paths:
+        - build.log
+        - build/
