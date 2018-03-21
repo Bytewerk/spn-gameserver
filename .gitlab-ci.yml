@@ -2,7 +2,7 @@ image: buildpack-deps:xenial
 
 before_script:
 - apt update
-- apt install -y lua-dev libeigen3-dev
+- apt install -y liblua5.3-dev libeigen3-dev
 
 build:
     script: "./make.sh 2>&1 | tee build.log"
