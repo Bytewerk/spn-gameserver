@@ -8,7 +8,9 @@ variables:
     GIT_SUBMODULE_STRATEGY: "normal"
 
 build:
-    script: "./make.sh 2>&1 | tee build.log"
+    script:
+        - ./make.sh 2>&1 | tee build.log
+        - du -hs build build.log
     artifacts:
         when: always
         expire_in: 1 week
