@@ -20,6 +20,7 @@ class Food : public IdentifyableObject, public PositionObject
 		Field   *m_field;
 		real_t   m_value;
 		bool     m_isDynamic;
+		bool     m_markDelete;
 
 	public:
 		/*!
@@ -31,4 +32,6 @@ class Food : public IdentifyableObject, public PositionObject
 		bool hasDecayed(void);
 		bool isDynamic(void) const { return m_isDynamic; }
 		real_t getValue() const { return m_value; }
+		void markDelete() { m_markDelete = true; }
+		bool shouldBeDeleted() const { return m_markDelete; }
 };

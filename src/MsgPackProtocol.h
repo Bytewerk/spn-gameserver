@@ -51,8 +51,8 @@ namespace MsgPackProtocol
 
 	struct WorldUpdateMessage
 	{
-		Field::BotSet bots;
-		Field::FoodSet food;
+		const Field::BotSet &bots;
+		const Field::FoodInfoMap &foodMap;
 	};
 
 	struct BotSpawnMessage
@@ -152,7 +152,11 @@ namespace msgpack {
 					o.pack(MsgPackProtocol::PROTOCOL_VERSION);
 					o.pack(static_cast<int>(MsgPackProtocol::MESSAGE_TYPE_WORLD_UPDATE));
 					o.pack(v.bots);
-					o.pack(v.food);
+					o.pack_array(v.foodMap.size());
+					for (auto& foodinfo: v.foodMap)
+					{
+						o.pack(foodinfo.food);
+					}
 					return o;
 				}
 			};

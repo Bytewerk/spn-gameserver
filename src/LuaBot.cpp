@@ -125,29 +125,26 @@ std::vector<LuaFoodInfo>& LuaBot::apiFindFood(real_t radius, real_t min_size)
 
 	m_luaFoodInfoTable.clear();
 	auto field = m_bot.getField();
-	field->getFoodInfoMap().processElements(
-		head_pos,
-		radius,
-		[this, field, head_pos, heading_rad, min_size](const Field::FoodInfo& foodinfo)
+	for (auto& foodinfo: field->getFoodInfoMap().getRegion(head_pos, radius))
+	{
+		if (foodinfo.food->getValue()<min_size)
 		{
-			if (foodinfo.food->getValue()>=min_size)
-			{
-				Vector2D relPos = field->unwrapRelativeCoords(foodinfo.pos() - head_pos);
-				real_t direction = static_cast<real_t>(atan2(relPos.y(), relPos.x())) - heading_rad;
-				while (direction<0) { direction += 2*M_PI; }
-				while (direction>2*M_PI) { direction -= 2*M_PI; }
-				m_luaFoodInfoTable.emplace_back(
-					relPos.x(),
-					relPos.y(),
-					foodinfo.food->getValue(),
-					direction,
-					relPos.norm()
-				);
-			}
-			return true;
+			continue;
 		}
-	);
 
+		// TODO thorough distance check
+		Vector2D relPos = field->unwrapRelativeCoords(foodinfo.pos() - head_pos);
+		real_t direction = static_cast<real_t>(atan2(relPos.y(), relPos.x())) - heading_rad;
+		while (direction<0) { direction += 2*M_PI; }
+		while (direction>2*M_PI) { direction -= 2*M_PI; }
+		m_luaFoodInfoTable.emplace_back(
+			relPos.x(),
+			relPos.y(),
+			foodinfo.food->getValue(),
+			direction,
+			relPos.norm()
+		);
+	}
 	return m_luaFoodInfoTable;
 }
 
@@ -160,28 +157,23 @@ std::vector<LuaSegmentInfo>& LuaBot::apiFindSegments(real_t radius, bool include
 
 	m_luaSegmentInfoTable.clear();
 	auto field = m_bot.getField();
-	field->getSegmentInfoMap().processElements(
-		pos,
-		radius,
-		[this, field, pos, heading_rad, self_id, include_self](const Field::SnakeSegmentInfo& segmentInfo)
-		{
-			if (!include_self && (segmentInfo.bot->getGUID() == self_id)) { return true; }
+	for (auto& segmentInfo: field->getSegmentInfoMap().getRegion(pos, radius))
+	{
+		if (!include_self && (segmentInfo.bot->getGUID() == self_id)) { continue; }
 
-			Vector2D relPos = field->unwrapRelativeCoords(segmentInfo.pos() - pos);
-			real_t direction = atan2(relPos.y(), relPos.x()) - heading_rad;
-			while (direction<0) { direction += 2*M_PI; }
-			while (direction>2*M_PI) { direction -= 2*M_PI; }
-			m_luaSegmentInfoTable.emplace_back(
-				relPos.x(),
-				relPos.y(),
-				segmentInfo.bot->getSnake()->getSegmentRadius(),
-				direction,
-				relPos.norm(),
-				segmentInfo.bot->getGUID()
-			);
-			return true;
-		}
-	);
+		Vector2D relPos = field->unwrapRelativeCoords(segmentInfo.pos() - pos);
+		real_t direction = atan2(relPos.y(), relPos.x()) - heading_rad;
+		while (direction<0) { direction += 2*M_PI; }
+		while (direction>2*M_PI) { direction -= 2*M_PI; }
+		m_luaSegmentInfoTable.emplace_back(
+			relPos.x(),
+			relPos.y(),
+			segmentInfo.bot->getSnake()->getSegmentRadius(),
+			direction,
+			relPos.norm(),
+			segmentInfo.bot->getGUID()
+		);
+	}
 
 	return m_luaSegmentInfoTable;
 }

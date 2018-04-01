@@ -50,8 +50,6 @@ class Field
 		real_t m_maxSegmentRadius = 0;
 
 		BotSet  m_bots;
-		FoodSet m_food;
-
 		std::unique_ptr<std::mt19937> m_rndGen;
 
 		std::unique_ptr< std::normal_distribution<real_t> >       m_foodSizeDistribution;
@@ -69,7 +67,6 @@ class Field
 		void setupRandomness(void);
 		void createStaticFood(std::size_t count);
 
-		void updateFoodMap(void);
 		void updateSnakeSegmentMap(void);
 		void updateMaxSegmentRadius(void);
 
@@ -105,11 +102,6 @@ class Field
 		 * Get the set of bots.
 		 */
 		const BotSet& getBots(void) const;
-
-		/*!
-		 * Get the set of food.
-		 */
-		const FoodSet& getFood(void) const;
 
 		/*!
 		 * Add dynamic food equally distributed in the given circle.

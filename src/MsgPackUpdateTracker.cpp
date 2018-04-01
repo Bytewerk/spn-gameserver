@@ -98,10 +98,11 @@ void MsgPackUpdateTracker::gameInfo(void)
 
 void MsgPackUpdateTracker::worldState(const std::shared_ptr<Field> &field)
 {
-	MsgPackProtocol::WorldUpdateMessage msg;
-
-	msg.bots = field->getBots();
-	msg.food = field->getFood();
+	MsgPackProtocol::WorldUpdateMessage msg
+	{
+		field->getBots(),
+		field->getFoodInfoMap()
+	};
 
 	msgpack::sbuffer buf;
 	msgpack::pack(buf, msg);
