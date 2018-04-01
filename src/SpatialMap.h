@@ -9,59 +9,6 @@ template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 {
 	public:
 		typedef std::vector<T> TileVector;
-
-		class Iterator
-		{
-			public:
-				Iterator(const SpatialMap& map, size_t tileNum, size_t positionInTile)
-					: _map(map)
-					, _tileNum(tileNum)
-					, _positionInTile(positionInTile)
-				{}
-
-				Iterator& operator++()
-				{
-					auto numTiles = _map.m_tiles.size();
-					if (_tileNum >= numTiles)
-					{
-						return *this;
-					}
-
-					if (++_positionInTile < _map.m_tiles[_tileNum].size())
-					{
-						return *this;
-					}
-
-					_positionInTile = 0;
-					while (++_tileNum < numTiles)
-					{
-						if (_map.m_tiles[_tileNum].size()>0)
-						{
-							return *this;
-						}
-					}
-
-					return *this;
-				}
-
-				bool operator!=(const Iterator& other)
-				{
-					return (&other._map!=&_map)
-							|| (other._tileNum!=_tileNum)
-							|| (other._positionInTile!=_positionInTile);
-				}
-
-				const T& operator*()
-				{
-					return _map.m_tiles[_tileNum][_positionInTile];
-				}
-
-			private:
-				const SpatialMap& _map;
-				size_t _tileNum;
-				size_t _positionInTile;
-		};
-
 		struct Region
 		{
 			const SpatialMap& map;
@@ -177,6 +124,7 @@ template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 			, m_fieldSizeY(fieldSizeY)
 			, m_tileSizeX(fieldSizeX/TILES_X)
 			, m_tileSizeY(fieldSizeY/TILES_Y)
+			, m_fullRegion(*this, 0, 0, TILES_X-1, TILES_Y-1)
 		{
 			for (auto &v: m_tiles)
 			{
@@ -184,21 +132,14 @@ template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 			}
 		}
 
-		Iterator begin() const
+		typename Region::Iterator begin() const
 		{
-			for (size_t i=0; i<m_tiles.size(); ++i)
-			{
-				if (m_tiles[i].size()>0)
-				{
-					return Iterator(*this, i, 0);
-				}
-			}
-			return end();
+			return m_fullRegion.begin();
 		}
 
-		Iterator end() const
+		typename Region::Iterator end() const
 		{
-			return Iterator(*this, m_tiles.size(), 0);
+			return m_fullRegion.end();
 		}
 
 		void clear()
@@ -248,6 +189,7 @@ template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 	private:
 		size_t m_fieldSizeX, m_fieldSizeY;
 		real_t m_tileSizeX, m_tileSizeY;
+		Region m_fullRegion;
 		std::array<TileVector, TILES_X*TILES_Y> m_tiles;
 
 		const TileVector& getTileVector(int tileX, int tileY) const
