@@ -1,122 +1,17 @@
 #pragma once
 #include <array>
 #include <vector>
-#include <tuple>
 #include <functional>
 #include "types.h"
+
+template <class T> class SpatialMapRegion;
 
 template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 {
 	public:
 		typedef std::vector<T> TileVector;
-		struct Region
-		{
-			const SpatialMap& map;
-			const int x1, y1, x2, y2;
-
-			class Iterator
-			{
-				public:
-					Iterator(const Region* region, bool atEnd)
-						: _r(region)
-						, _atEnd(atEnd)
-					{
-						if (_atEnd)
-						{
-							moveToEnd();
-						}
-						else
-						{
-							_tileX = _r->x1;
-							_tileY = _r->y1;
-							skipEmptyTiles();
-						}
-					}
-
-					Iterator& operator++()
-					{
-						if (_atEnd) { return *this; }
-						if (++_positionInTile >= getCurrentTile().size())
-						{
-							_positionInTile = 0;
-							_tileX++;
-							skipEmptyTiles();
-						}
-						return *this;
-					}
-
-					bool operator!=(const Iterator& other)
-					{
-						if (_atEnd)
-						{
-							return (other._r != _r) || (!other._atEnd);
-						}
-
-						return (other._r != _r)
-							|| (other._atEnd!=_atEnd)
-							|| (other._tileX != _tileX)
-							|| (other._tileY != _tileY)
-							|| (other._positionInTile != _positionInTile);
-					}
-
-					const T& operator*()
-					{
-						return getCurrentTile()[_positionInTile];
-					}
-
-				private:
-					const Region* _r;
-					bool _atEnd = false;
-					int _tileX = 0;
-					int _tileY = 0;
-					size_t _positionInTile = 0;
-
-					void skipEmptyTiles()
-					{
-						while (_tileY <= _r->y2)
-						{
-							while (_tileX <= _r->x2)
-							{
-								if (getCurrentTile().size()>0)
-								{
-									return;
-								}
-								_tileX++;
-							}
-							_tileX = _r->x1;
-							_tileY++;
-						}
-						moveToEnd();
-					}
-
-					void moveToEnd()
-					{
-						_atEnd = true;
-						_tileX = 0;
-						_tileY = 0;
-						_positionInTile = 0;
-					}
-
-					const TileVector& getCurrentTile()
-					{
-						return _r->map.getTileVector(_tileX, _tileY);
-					}
-			};
-
-			Region(const SpatialMap& aMap, int ax1, int ay1, int ax2, int ay2)
-				: map(aMap), x1(ax1), y1(ay1), x2(ax2), y2(ay2)
-			{}
-
-			Iterator begin() const
-			{
-				return Iterator(this, false);
-			}
-
-			Iterator end() const
-			{
-				return Iterator(this, true);
-			}
-		};
+		typedef SpatialMapRegion<SpatialMap<T,TILES_X,TILES_Y>> Region;
+		friend class SpatialMapRegion<SpatialMap<T,TILES_X,TILES_Y>>;
 
 	public:
 		SpatialMap(size_t fieldSizeX, size_t fieldSizeY, size_t reserveCount)
@@ -130,16 +25,6 @@ template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 			{
 				v.reserve(reserveCount);
 			}
-		}
-
-		typename Region::Iterator begin() const
-		{
-			return m_fullRegion.begin();
-		}
-
-		typename Region::Iterator end() const
-		{
-			return m_fullRegion.end();
 		}
 
 		void clear()
@@ -186,6 +71,16 @@ template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 			};
 		}
 
+		typename Region::Iterator begin() const
+		{
+			return m_fullRegion.begin();
+		}
+
+		typename Region::Iterator end() const
+		{
+			return m_fullRegion.end();
+		}
+
 	private:
 		size_t m_fieldSizeX, m_fieldSizeY;
 		real_t m_tileSizeX, m_tileSizeY;
@@ -212,3 +107,118 @@ template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 		}
 
 };
+
+template <class T> class SpatialMapRegion
+{
+	public:
+
+		class Iterator
+		{
+			public:
+				Iterator(const SpatialMapRegion* region, bool atEnd)
+					: m_region(region)
+					, m_atEnd(atEnd)
+				{
+					if (m_atEnd)
+					{
+						moveToEnd();
+					}
+					else
+					{
+						m_tileX = m_region->m_x1;
+						m_tileY = m_region->m_y1;
+						skipEmptyTiles();
+					}
+				}
+
+				Iterator& operator++()
+				{
+					if (m_atEnd) { return *this; }
+					if (++m_positionInTile >= getCurrentTile().size())
+					{
+						m_positionInTile = 0;
+						m_tileX++;
+						skipEmptyTiles();
+					}
+					return *this;
+				}
+
+				bool operator!=(const Iterator& other)
+				{
+					if (m_atEnd)
+					{
+						return (other.m_region != m_region) || (!other.m_atEnd);
+					}
+
+					return (other.m_region != m_region)
+						|| (other.m_atEnd!=m_atEnd)
+						|| (other.m_tileX != m_tileX)
+						|| (other.m_tileY != m_tileY)
+						|| (other.m_positionInTile != m_positionInTile);
+				}
+
+				const auto& operator*()
+				{
+					return getCurrentTile()[m_positionInTile];
+				}
+
+			private:
+				const SpatialMapRegion* m_region;
+				bool m_atEnd = false;
+				int m_tileX = 0;
+				int m_tileY = 0;
+				size_t m_positionInTile = 0;
+
+				void skipEmptyTiles()
+				{
+					while (m_tileY <= m_region->m_y2)
+					{
+						while (m_tileX <= m_region->m_x2)
+						{
+							if (getCurrentTile().size()>0)
+							{
+								return;
+							}
+							m_tileX++;
+						}
+						m_tileX = m_region->m_x1;
+						m_tileY++;
+					}
+					moveToEnd();
+				}
+
+				void moveToEnd()
+				{
+					m_atEnd = true;
+					m_tileX = 0;
+					m_tileY = 0;
+					m_positionInTile = 0;
+				}
+
+				const typename T::TileVector& getCurrentTile()
+				{
+					// TODO optimize this if region does not wrap?
+					return m_region->m_map.getTileVector(m_tileX, m_tileY);
+				}
+		};
+
+		SpatialMapRegion(const T& aMap, int x1, int y1, int x2, int y2)
+			: m_map(aMap), m_x1(x1), m_y1(y1), m_x2(x2), m_y2(y2)
+		{}
+
+		Iterator begin() const
+		{
+			return Iterator(this, false);
+		}
+
+		Iterator end() const
+		{
+			return Iterator(this, true);
+		}
+
+	private:
+		const T& m_map;
+		const int m_x1, m_y1, m_x2, m_y2;
+
+};
+
