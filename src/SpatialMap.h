@@ -92,6 +92,11 @@ template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 			return m_tiles[wrap<TILES_Y>(tileY)*TILES_X + wrap<TILES_X>(tileX)];
 		}
 
+		const TileVector& getTileVectorNoWrap(int tileX, int tileY) const
+		{
+			return m_tiles[tileY*TILES_X +tileX];
+		}
+
 		TileVector& getTileVectorForPosition(const Vector2D& pos)
 		{
 			size_t tileX = wrap<TILES_X>(pos.x() / m_tileSizeX);
@@ -106,6 +111,16 @@ template <class T, size_t TILES_X, size_t TILES_Y> class SpatialMap
 			return static_cast<size_t>(result);
 		}
 
+		static bool needsWrapX(int unwrapped)
+		{
+			return (unwrapped<0) || (unwrapped>=TILES_X);
+		}
+
+		static bool needsWrapY(int unwrapped)
+		{
+			return (unwrapped<0) || (unwrapped>=TILES_Y);
+		}
+
 };
 
 template <class T> class SpatialMapRegion
@@ -117,6 +132,7 @@ template <class T> class SpatialMapRegion
 			public:
 				Iterator(const SpatialMapRegion* region, bool atEnd)
 					: m_region(region)
+					, m_needsWrap(region->m_needsWrap)
 					, m_atEnd(atEnd)
 				{
 					if (m_atEnd)
@@ -164,6 +180,7 @@ template <class T> class SpatialMapRegion
 
 			private:
 				const SpatialMapRegion* m_region;
+				const bool m_needsWrap = true;
 				bool m_atEnd = false;
 				int m_tileX = 0;
 				int m_tileY = 0;
@@ -197,14 +214,17 @@ template <class T> class SpatialMapRegion
 
 				const typename T::TileVector& getCurrentTile()
 				{
-					// TODO optimize this if region does not wrap?
-					return m_region->m_map.getTileVector(m_tileX, m_tileY);
+					return m_needsWrap
+						 ? m_region->m_map.getTileVector(m_tileX, m_tileY)
+						 : m_region->m_map.getTileVectorNoWrap(m_tileX, m_tileY);
 				}
 		};
 
-		SpatialMapRegion(const T& aMap, int x1, int y1, int x2, int y2)
-			: m_map(aMap), m_x1(x1), m_y1(y1), m_x2(x2), m_y2(y2)
-		{}
+		SpatialMapRegion(const T& map, int x1, int y1, int x2, int y2)
+			: m_map(map), m_x1(x1), m_y1(y1), m_x2(x2), m_y2(y2)
+			, m_needsWrap(map.needsWrapX(x1) || map.needsWrapX(x2) || map.needsWrapY(y1) || map.needsWrapY(y2))
+		{
+		}
 
 		Iterator begin() const
 		{
@@ -219,6 +239,7 @@ template <class T> class SpatialMapRegion
 	private:
 		const T& m_map;
 		const int m_x1, m_y1, m_x2, m_y2;
+		const bool m_needsWrap;
 
 };
 
