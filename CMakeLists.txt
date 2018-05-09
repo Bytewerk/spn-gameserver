@@ -23,8 +23,6 @@ include_directories(src)
 set(sources
 	src/Bot.cpp
 	src/Bot.h
-	src/BotThreadPool.cpp
-	src/BotThreadPool.h
 	src/config.h
 	src/debug_funcs.h
 	src/Field.cpp

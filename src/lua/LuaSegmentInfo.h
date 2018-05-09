@@ -14,7 +14,7 @@ struct LuaSegmentInfo
 		static void Register(sol::state& lua);
 
 		guid_t getBotId();
-		std::string getBotName();
+		std::string moveFutures();
 
 	private:
 		Bot *m_bot;

@@ -18,7 +18,7 @@ void LuaSegmentInfo::Register(sol::state &lua)
 		"dist", sol::readonly(&LuaSegmentInfo::dist),
 		"bot", sol::property(&LuaSegmentInfo::getBotId),
 		"bot_id", sol::property(&LuaSegmentInfo::getBotId),
-		"bot_name", sol::property(&LuaSegmentInfo::getBotName)
+		"bot_name", sol::property(&LuaSegmentInfo::moveFutures)
 	);
 }
 
@@ -27,7 +27,7 @@ guid_t LuaSegmentInfo::getBotId()
 	return m_bot->getGUID();
 }
 
-std::string LuaSegmentInfo::getBotName()
+std::string LuaSegmentInfo::moveFutures()
 {
 	return m_bot->getName();
 }

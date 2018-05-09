@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-
+#include <future>
 #include "Field.h"
 
 Field::Field(real_t w, real_t h, std::size_t food_parts, std::unique_ptr<UpdateTracker> update_tracker)
@@ -10,7 +10,6 @@ Field::Field(real_t w, real_t h, std::size_t food_parts, std::unique_ptr<UpdateT
 	, m_updateTracker(std::move(update_tracker))
 	, m_foodMap(static_cast<size_t>(w), static_cast<size_t>(h), config::SPATIAL_MAP_RESERVE_COUNT)
 	, m_segmentInfoMap(static_cast<size_t>(w), static_cast<size_t>(h), config::SPATIAL_MAP_RESERVE_COUNT)
-	, m_threadPool(std::thread::hardware_concurrency())
 {
 	setupRandomness();
 	createStaticFood(food_parts);
@@ -151,64 +150,61 @@ void Field::consumeFood(void)
 	updateMaxSegmentRadius();
 }
 
+struct CollisionResult
+{
+	std::shared_ptr<Bot> victim;
+	std::shared_ptr<Bot> killer;
+};
+
 void Field::moveAllBots(void)
 {
-	// first round: move all bots
-	for(auto &b : m_bots) {
-		std::unique_ptr<BotThreadPool::Job> job(new BotThreadPool::Job(BotThreadPool::Move, b));
-		m_threadPool.addJob(std::move(job));
+	std::vector<std::future<size_t>> moveFutures;
+	moveFutures.reserve(m_bots.size());
+	for (auto&b: m_bots)
+	{
+		moveFutures.push_back(std::async([&b]() { return b->move(); }));
 	}
+	// wait for completion
+	for (auto&f: moveFutures) { f.wait(); }
 
-	m_threadPool.waitForCompletion();
-
-	// FIXME: make this work without temporary vector
-	std::vector< std::unique_ptr<BotThreadPool::Job> > tmpJobs;
-	tmpJobs.reserve(m_bots.size());
-
-	std::unique_ptr<BotThreadPool::Job> job;
-	while((job = m_threadPool.getProcessedJob()) != NULL) {
-		tmpJobs.push_back(std::move(job));
+	std::vector<std::future<CollisionResult>> collisionFutures;
+	collisionFutures.reserve(m_bots.size());
+	for (auto&b: m_bots)
+	{
+		collisionFutures.push_back(std::async([&b]() {
+			return CollisionResult{b, b->checkCollision()};
+		}));
 	}
+	// wait for completion
+	for (auto&f: collisionFutures) { f.wait(); }
 
-	// second round: collision check
-	for(auto &j : tmpJobs) {
-		j->jobType = BotThreadPool::CollisionCheck;
-		m_threadPool.addJob(std::move(j));
-	}
-
-	m_threadPool.waitForCompletion();
-
-
-	// collision check for all bots
-	while((job = m_threadPool.getProcessedJob()) != NULL) {
-		std::shared_ptr<Bot> victim = job->bot;
-		std::size_t steps = job->steps;
-
-		std::shared_ptr<Bot> killer = job->killer;
-
-		if (killer) {
+	for (size_t i=0; i<moveFutures.size(); i++)
+	{
+		std::size_t steps = moveFutures[i].get();
+		CollisionResult collisionResult = collisionFutures[i].get();
+		if (collisionResult.killer) {
 			// size check on killer
-			double killerMass = killer->getSnake()->getMass();
-			double victimMass = victim->getSnake()->getMass();
+			double killerMass = collisionResult.killer->getSnake()->getMass();
+			double victimMass = collisionResult.victim->getSnake()->getMass();
 
 			if(killerMass > (victimMass * config::KILLER_MIN_MASS_RATIO)) {
 				// collision detected and killer is large enough
 				// -> convert the colliding bot to food
-				killBot(victim, killer);
+				killBot(collisionResult.victim, collisionResult.killer);
 			}
 		} else {
 			// no collision, bot still alive
-			m_updateTracker->botMoved(victim, steps);
+			m_updateTracker->botMoved(collisionResult.victim, steps);
 
-			if(victim->getSnake()->boostedLastMove()) {
+			if(collisionResult.victim->getSnake()->boostedLastMove()) {
 				real_t lossValue =
-					config::SNAKE_BOOST_LOSS_FACTOR * victim->getSnake()->getMass();
+					config::SNAKE_BOOST_LOSS_FACTOR * collisionResult.victim->getSnake()->getMass();
 
-				victim->getSnake()->dropFood(lossValue);
+				collisionResult.victim->getSnake()->dropFood(lossValue);
 
-				if(victim->getSnake()->getMass() < config::SNAKE_SELF_KILL_MASS_THESHOLD) {
+				if(collisionResult.victim->getSnake()->getMass() < config::SNAKE_SELF_KILL_MASS_THESHOLD) {
 					// Bot is now too small, so it dies
-					killBot(victim, victim);
+					killBot(collisionResult.victim, collisionResult.victim);
 				}
 			}
 		}
