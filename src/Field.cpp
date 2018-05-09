@@ -56,7 +56,7 @@ void Field::updateSnakeSegmentMap()
 	m_segmentInfoMap.clear();
 	for (auto &b : m_bots)
 	{
-		for(auto &s : b->getSnake()->getSegments())
+		for(auto &s : b->getSnake().getSegments())
 		{
 			m_segmentInfoMap.addElement({s, b});
 		}
@@ -68,7 +68,7 @@ void Field::updateMaxSegmentRadius(void)
 	m_maxSegmentRadius = 0;
 
 	for(auto &b: m_bots) {
-		real_t segmentRadius = b->getSnake()->getSegmentRadius();
+		real_t segmentRadius = b->getSnake().getSegmentRadius();
 
 		if(segmentRadius > m_maxSegmentRadius) {
 			m_maxSegmentRadius = segmentRadius;
@@ -130,12 +130,12 @@ void Field::consumeFood(void)
 {
 	size_t newStaticFood = 0;
 	for (auto &b: m_bots) {
-		auto headPos = b->getSnake()->getHeadPosition();
-		auto radius = b->getSnake()->getSegmentRadius() * config::SNAKE_CONSUME_RANGE;
+		auto headPos = b->getSnake().getHeadPosition();
+		auto radius = b->getSnake().getSegmentRadius() * config::SNAKE_CONSUME_RANGE;
 
 		for (auto& fi: m_foodMap.getRegion(headPos, radius))
 		{
-			if (b->getSnake()->tryConsume(fi))
+			if (b->getSnake().tryConsume(fi))
 			{
 				b->updateConsumeStats(fi);
 				m_updateTracker->foodConsumed(fi, b);
@@ -166,7 +166,7 @@ void Field::moveAllBots(void)
 	tmpJobs.reserve(m_bots.size());
 
 	std::unique_ptr<BotThreadPool::Job> job;
-	while((job = m_threadPool.getProcessedJob()) != NULL) {
+	while((job = m_threadPool.getProcessedJob()) != nullptr) {
 		tmpJobs.push_back(std::move(job));
 	}
 
@@ -180,7 +180,7 @@ void Field::moveAllBots(void)
 
 
 	// collision check for all bots
-	while((job = m_threadPool.getProcessedJob()) != NULL) {
+	while((job = m_threadPool.getProcessedJob()) != nullptr) {
 		std::shared_ptr<Bot> victim = job->bot;
 		std::size_t steps = job->steps;
 
@@ -188,8 +188,8 @@ void Field::moveAllBots(void)
 
 		if (killer) {
 			// size check on killer
-			double killerMass = killer->getSnake()->getMass();
-			double victimMass = victim->getSnake()->getMass();
+			double killerMass = killer->getSnake().getMass();
+			double victimMass = victim->getSnake().getMass();
 
 			if(killerMass > (victimMass * config::KILLER_MIN_MASS_RATIO)) {
 				// collision detected and killer is large enough
@@ -200,13 +200,13 @@ void Field::moveAllBots(void)
 			// no collision, bot still alive
 			m_updateTracker->botMoved(victim, steps);
 
-			if(victim->getSnake()->boostedLastMove()) {
+			if(victim->getSnake().boostedLastMove()) {
 				real_t lossValue =
-					config::SNAKE_BOOST_LOSS_FACTOR * victim->getSnake()->getMass();
+					config::SNAKE_BOOST_LOSS_FACTOR * victim->getSnake().getMass();
 
-				victim->getSnake()->dropFood(lossValue);
+				victim->getSnake().dropFood(lossValue);
 
-				if(victim->getSnake()->getMass() < config::SNAKE_SELF_KILL_MASS_THESHOLD) {
+				if(victim->getSnake().getMass() < config::SNAKE_SELF_KILL_MASS_THESHOLD) {
 					// Bot is now too small, so it dies
 					killBot(victim, victim);
 				}
@@ -360,10 +360,10 @@ void Field::debugVisualization(void)
 
 	// draw snakes (head = #, rest = +)
 	for(auto &b: m_bots) {
-		std::shared_ptr<Snake> snake = b->getSnake();
+		auto snake = b->getSnake();
 
 		bool first = true;
-		for(auto &seg: snake->getSegments()) {
+		for(auto &seg: snake.getSegments()) {
 			size_t x = static_cast<size_t>(seg.pos().x());
 			size_t y = static_cast<size_t>(seg.pos().y());
 
@@ -404,7 +404,7 @@ void Field::addBotKilledCallback(Field::BotKilledCallback callback)
 
 void Field::killBot(std::shared_ptr<Bot> victim, std::shared_ptr<Bot> killer)
 {
-	victim->getSnake()->convertToFood(killer);
+	victim->getSnake().convertToFood(killer);
 	m_bots.erase(victim);
 	m_updateTracker->botKilled(killer, victim);
 
