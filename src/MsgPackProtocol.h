@@ -415,9 +415,9 @@ namespace msgpack {
 					o.pack(v->getFace());
 					o.pack(v->getDogTag());
 					o.pack(v->getColors());
-					o.pack(v->getSnake()->getMass());
-					o.pack(v->getSnake()->getSegmentRadius());
-					o.pack(v->getSnake()->getSegments());
+					o.pack(v->getSnake().getMass());
+					o.pack(v->getSnake().getSegmentRadius());
+					o.pack(v->getSnake().getSegments());
 					return o;
 				}
 			};

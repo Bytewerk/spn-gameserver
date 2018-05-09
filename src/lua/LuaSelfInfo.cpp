@@ -81,12 +81,12 @@ void LuaSelfInfo::setDogTag()
 
 real_t LuaSelfInfo::getRadius()
 {
-	return m_bot.getSnake()->getSegmentRadius();
+	return m_bot.getSnake().getSegmentRadius();
 }
 
 real_t LuaSelfInfo::getMass()
 {
-	return m_bot.getSnake()->getMass();
+	return m_bot.getSnake().getMass();
 }
 
 real_t LuaSelfInfo::getSightRadius()
@@ -96,7 +96,7 @@ real_t LuaSelfInfo::getSightRadius()
 
 real_t LuaSelfInfo::getConsumeRadius()
 {
-	return m_bot.getSnake()->getConsumeRadius();
+	return m_bot.getSnake().getConsumeRadius();
 }
 
 uint32_t LuaSelfInfo::getStartFrame()
@@ -131,5 +131,5 @@ real_t LuaSelfInfo::getConsumedFoodHuntedBySelf()
 
 real_t LuaSelfInfo::getMaxStepAngle()
 {
-	return (M_PI * m_bot.getSnake()->maxRotationPerStep()) / 180.0;
+	return (M_PI * m_bot.getSnake().maxRotationPerStep()) / 180.0;
 }

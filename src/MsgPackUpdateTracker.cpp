@@ -78,11 +78,11 @@ void MsgPackUpdateTracker::botMoved(const std::shared_ptr<Bot> &bot, std::size_t
 	// Fill BotMoveMessage
 	MsgPackProtocol::BotMoveItem item;
 
-	const Snake::SegmentList &segments = bot->getSnake()->getSegments();
+	const Snake::SegmentList &segments = bot->getSnake().getSegments();
 
 	item.bot_id = bot->getGUID();
 	item.new_segments.assign(segments.begin(), segments.begin() + steps);
-	item.current_segment_radius = bot->getSnake()->getSegmentRadius();
+	item.current_segment_radius = bot->getSnake().getSegmentRadius();
 	item.current_length = segments.size();
 
 	m_botMoveMessage->items.push_back(item);
@@ -91,8 +91,8 @@ void MsgPackUpdateTracker::botMoved(const std::shared_ptr<Bot> &bot, std::size_t
 	MsgPackProtocol::BotMoveHeadItem headItem;
 
 	headItem.bot_id = bot->getGUID();
-	headItem.mass = bot->getSnake()->getMass();
-	headItem.new_head_positions = bot->getSnake()->getHeadPositionsDuringLastMove();
+	headItem.mass = bot->getSnake().getMass();
+	headItem.new_head_positions = bot->getSnake().getHeadPositionsDuringLastMove();
 
 	m_botMoveHeadMessage->items.push_back(headItem);
 }
@@ -154,7 +154,7 @@ void MsgPackUpdateTracker::botStats(const std::shared_ptr<Bot> &bot)
 	item.natural_food_consumed = bot->getConsumedNaturalFood();
 	item.carrison_food_consumed = bot->getConsumedFoodHuntedByOthers();
 	item.hunted_food_consumed = bot->getConsumedFoodHuntedBySelf();
-	item.mass = bot->getSnake()->getMass();
+	item.mass = bot->getSnake().getMass();
 
 	m_botStatsMessage->items.push_back(item);
 }

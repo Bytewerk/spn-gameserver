@@ -175,7 +175,7 @@ std::vector<LuaFoodInfo>& LuaBot::apiFindFood(real_t radius, real_t min_size)
 {
 	m_luaFoodInfoTable.clear();
 
-	auto head_pos = m_bot.getSnake()->getHeadPosition();
+	auto head_pos = m_bot.getSnake().getHeadPosition();
 	real_t heading_rad = static_cast<real_t>(2.0 * M_PI * (m_bot.getHeading() / 360.0));
 
 	radius = std::min(radius, m_bot.getSightRadius());
@@ -212,7 +212,7 @@ std::vector<LuaSegmentInfo>& LuaBot::apiFindSegments(real_t radius, bool include
 {
 	m_luaSegmentInfoTable.clear();
 
-	auto pos = m_bot.getSnake()->getHeadPosition();
+	auto pos = m_bot.getSnake().getHeadPosition();
 	real_t heading_rad = 2*M_PI * (m_bot.getHeading() / 360.0);
 	radius = std::min(radius, m_bot.getSightRadius());
 	auto self_id = m_bot.getGUID();
@@ -221,7 +221,7 @@ std::vector<LuaSegmentInfo>& LuaBot::apiFindSegments(real_t radius, bool include
 	for (auto &segmentInfo: field->getSegmentInfoMap().getRegion(pos, radius + m_bot.getField()->getMaxSegmentRadius()))
 	{
 		if (!include_self && (segmentInfo.bot->getGUID() == self_id)) { continue; }		
-		real_t segmentRadius = segmentInfo.bot->getSnake()->getSegmentRadius();
+		real_t segmentRadius = segmentInfo.bot->getSnake().getSegmentRadius();
 		Vector2D relPos = field->unwrapRelativeCoords(segmentInfo.pos() - pos);
 		real_t distance = relPos.norm();
 		if (distance > (radius+segmentRadius)) { continue; }

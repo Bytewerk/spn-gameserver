@@ -23,7 +23,7 @@ class Bot : public IdentifyableObject
 		Field *m_field;
 		uint32_t m_startFrame;
 		std::unique_ptr<db::BotScript> m_dbData;
-		std::shared_ptr<Snake> m_snake;
+		Snake m_snake;
 		std::unique_ptr<LuaBot> m_lua_bot;
 		real_t m_heading;
 		std::vector<std::string> m_logMessages;
@@ -69,7 +69,8 @@ class Bot : public IdentifyableObject
 		 */
 		void increaseLogCredit();
 
-		std::shared_ptr<Snake> getSnake(void) const { return m_snake; }
+		Snake& getSnake(void) { return m_snake; }
+		const Snake& getSnake(void) const { return m_snake; }
 		const std::string &getName(void) const { return m_dbData->bot_name; }
 		real_t getHeading() { return m_heading; }
 		Field* getField() { return m_field; }
