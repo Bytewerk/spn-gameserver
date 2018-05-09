@@ -3,12 +3,12 @@
 #include "Food.h"
 
 Food::Food(bool shallRegenerate, const Vector2D &pos, real_t value,
-		const std::shared_ptr<Bot> &hunter)
+		guid_t hunter_id)
 	: PositionObject(pos)
 	, m_value(value)
 	, m_shallRegenerate(shallRegenerate)
 	, m_shallBeRemoved(false)
-	, m_hunter(hunter)
+	, m_hunter(hunter_id)
 {
 }
 

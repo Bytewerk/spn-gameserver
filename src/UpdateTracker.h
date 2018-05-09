@@ -23,7 +23,7 @@ class UpdateTracker
 		 */
 		virtual void foodConsumed(
 				const Food &food,
-				const std::shared_ptr<Bot> &by_bot) = 0;
+				const Bot &by_bot) = 0;
 
 		/*!
 		 * Track an event of decayed food.
@@ -44,7 +44,7 @@ class UpdateTracker
 		 *
 		 * \param bot   Pointer to the bot that has just spawned.
 		 */
-		virtual void botSpawned(const std::shared_ptr<Bot> &bot) = 0;
+		virtual void botSpawned(const Bot &bot) = 0;
 
 		/*!
 		 * Track an event of a bot killing another one (aka. two snakes collided).
@@ -52,9 +52,7 @@ class UpdateTracker
 		 * \param killer   Pointer to the bot that the victim collided with.
 		 * \param victim   Pointer to the bot that died.
 		 */
-		virtual void botKilled(
-				const std::shared_ptr<Bot> &killer,
-				const std::shared_ptr<Bot> &victim) = 0;
+		virtual void botKilled(const Bot &victim, const Bot *killer) = 0;
 
 		/*!
 		 * Track a bot move event.
@@ -62,7 +60,7 @@ class UpdateTracker
 		 * \param bot   Pointer to the bot that moved.
 		 * \param steps Steps that the bot moved forward.
 		 */
-		virtual void botMoved(const std::shared_ptr<Bot> &bot, std::size_t steps) = 0;
+		virtual void botMoved(const Bot &bot, std::size_t steps) = 0;
 
 		virtual void botLogMessage(uint64_t viewerKey, const std::string& message) = 0;
 
@@ -80,7 +78,7 @@ class UpdateTracker
 		 *
 		 * \param bot   Pointer to the bot that should be included in the stats.
 		 */
-		virtual void botStats(const std::shared_ptr<Bot> &bot) = 0;
+		virtual void botStats(const Bot &bot) = 0;
 
 		/*!
 		 * Serialize the events added since the last reset or serialization.

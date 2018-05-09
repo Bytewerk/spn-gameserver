@@ -53,11 +53,11 @@ void Field::setupRandomness(void)
 void Field::updateSnakeSegmentMap()
 {
 	m_segmentInfoMap.clear();
-	for (auto &b : m_bots)
+	for (auto &bot : m_bots)
 	{
-		for(auto &s : b->getSnake().getSegments())
+		for(auto &s : bot->getSnake().getSegments())
 		{
-			m_segmentInfoMap.addElement({s, b});
+			m_segmentInfoMap.addElement({s, *bot});
 		}
 	}
 }
@@ -75,13 +75,13 @@ void Field::updateMaxSegmentRadius(void)
 	}
 }
 
-std::shared_ptr<Bot> Field::newBot(std::unique_ptr<db::BotScript> data, std::string& initErrorMessage)
+void Field::newBot(std::unique_ptr<db::BotScript> data, std::string& initErrorMessage)
 {
 	real_t x = (*m_positionXDistribution)(*m_rndGen);
 	real_t y = (*m_positionYDistribution)(*m_rndGen);
 	real_t heading = (*m_angleDegreesDistribution)(*m_rndGen);
 
-	std::shared_ptr<Bot> bot = std::make_shared<Bot>(
+	auto bot = std::make_unique<Bot>(
 		this,
 		getCurrentFrame(),
 		std::move(data),
@@ -94,14 +94,19 @@ std::shared_ptr<Bot> Field::newBot(std::unique_ptr<db::BotScript> data, std::str
 	{
 		std::cerr << "Created Bot with ID " << bot->getGUID() << std::endl;
 		m_updateTracker->botLogMessage(bot->getViewerKey(), "starting bot");
-		m_updateTracker->botSpawned(bot);
-		m_bots.insert(bot);
+		m_updateTracker->botSpawned(*bot);
+		m_bots.push_back(bot.get());
+		bot.release();
 	}
 	else
 	{
 		m_updateTracker->botLogMessage(bot->getViewerKey(), "cannot start bot: " + initErrorMessage);
 	}
-	return bot;
+}
+
+void Field::prepareFrame()
+{
+	updateSnakeSegmentMap();
 }
 
 void Field::decayFood(void)
@@ -128,16 +133,16 @@ void Field::removeFood()
 void Field::consumeFood(void)
 {
 	size_t newStaticFood = 0;
-	for (auto &b: m_bots) {
-		auto headPos = b->getSnake().getHeadPosition();
-		auto radius = b->getSnake().getSegmentRadius() * config::SNAKE_CONSUME_RANGE;
+	for (auto &bot: m_bots) {
+		auto headPos = bot->getSnake().getHeadPosition();
+		auto radius = bot->getSnake().getSegmentRadius() * config::SNAKE_CONSUME_RANGE;
 
 		for (auto& fi: m_foodMap.getRegion(headPos, radius))
 		{
-			if (b->getSnake().tryConsume(fi))
+			if (bot->getSnake().tryConsume(fi))
 			{
-				b->updateConsumeStats(fi);
-				m_updateTracker->foodConsumed(fi, b);
+				bot->updateConsumeStats(fi);
+				m_updateTracker->foodConsumed(fi, *bot);
 				fi.markForRemove();
 				if (fi.shallRegenerate())
 				{
@@ -152,8 +157,8 @@ void Field::consumeFood(void)
 
 struct CollisionResult
 {
-	std::shared_ptr<Bot> victim;
-	std::shared_ptr<Bot> killer;
+	Bot* victim;
+	const Bot* killer;
 };
 
 void Field::moveAllBots(void)
@@ -162,7 +167,7 @@ void Field::moveAllBots(void)
 	moveFutures.reserve(m_bots.size());
 	for (auto&b: m_bots)
 	{
-		moveFutures.push_back(std::async(std::launch::async, [&b]() { return b->move(); }));
+		moveFutures.push_back(std::async([&b]() { return b->move(); }));
 	}
 	// wait for completion
 	for (auto&f: moveFutures) { f.wait(); }
@@ -171,7 +176,7 @@ void Field::moveAllBots(void)
 	collisionFutures.reserve(m_bots.size());
 	for (auto&b: m_bots)
 	{
-		collisionFutures.push_back(std::async(std::launch::async, [&b]() {
+		collisionFutures.push_back(std::async([&b]() {
 			return CollisionResult{b, b->checkCollision()};
 		}));
 	}
@@ -182,7 +187,7 @@ void Field::moveAllBots(void)
 	{
 		std::size_t steps = moveFutures[i].get();
 		CollisionResult collisionResult = collisionFutures[i].get();
-		if (collisionResult.killer) {
+		if (collisionResult.killer != nullptr) {
 			// size check on killer
 			double killerMass = collisionResult.killer->getSnake().getMass();
 			double victimMass = collisionResult.victim->getSnake().getMass();
@@ -190,13 +195,14 @@ void Field::moveAllBots(void)
 			if(killerMass > (victimMass * config::KILLER_MIN_MASS_RATIO)) {
 				// collision detected and killer is large enough
 				// -> convert the colliding bot to food
-				killBot(collisionResult.victim, collisionResult.killer);
+				killBot(*collisionResult.victim, collisionResult.killer);
 			}
 		} else {
 			// no collision, bot still alive
-			m_updateTracker->botMoved(collisionResult.victim, steps);
+			m_updateTracker->botMoved(*collisionResult.victim, steps);
 
-			if(collisionResult.victim->getSnake().boostedLastMove()) {
+			if(collisionResult.victim->getSnake().boostedLastMove())
+			{
 				real_t lossValue =
 					config::SNAKE_BOOST_LOSS_FACTOR * collisionResult.victim->getSnake().getMass();
 
@@ -204,13 +210,11 @@ void Field::moveAllBots(void)
 
 				if(collisionResult.victim->getSnake().getMass() < config::SNAKE_SELF_KILL_MASS_THESHOLD) {
 					// Bot is now too small, so it dies
-					killBot(collisionResult.victim, collisionResult.victim);
+					killBot(*collisionResult.victim, collisionResult.victim);
 				}
 			}
 		}
 	}
-
-	updateSnakeSegmentMap();
 }
 
 void Field::processLog()
@@ -232,10 +236,23 @@ void Field::tick()
 	m_updateTracker->tick(m_currentFrame);
 }
 
+void Field::garbageCollectBots()
+{
+	for (auto killedBot: m_killed_bots)
+	{
+		m_bots.erase(std::remove_if(m_bots.begin(), m_bots.end(), [killedBot](const Bot* bot)
+		{
+			return bot==killedBot;
+		}));
+		delete killedBot;
+	}
+	m_killed_bots.clear();
+}
+
 void Field::sendStatsToStream(void)
 {
 	for(auto &bot: m_bots) {
-		m_updateTracker->botStats(bot);
+		m_updateTracker->botStats(*bot);
 	}
 }
 
@@ -244,7 +261,7 @@ const Field::BotSet& Field::getBots(void) const
 	return m_bots;
 }
 
-std::shared_ptr<Bot> Field::getBotByDatabaseId(int id)
+Bot* Field::getBotByDatabaseId(int id)
 {
 	for (auto& bot: m_bots)
 	{
@@ -256,8 +273,7 @@ std::shared_ptr<Bot> Field::getBotByDatabaseId(int id)
 	return nullptr;
 }
 
-void Field::createDynamicFood(real_t totalValue, const Vector2D &center, real_t radius,
-		const std::shared_ptr<Bot> &hunter)
+void Field::createDynamicFood(real_t totalValue, const Vector2D &center, real_t radius, guid_t hunterId)
 {
 	real_t remainingValue = totalValue;
 
@@ -277,7 +293,7 @@ void Field::createDynamicFood(real_t totalValue, const Vector2D &center, real_t 
 
 		Vector2D pos = wrapCoords(center + offset);
 
-		Food food {false, pos, value, hunter};
+		Food food {false, pos, value, hunterId};
 		m_updateTracker->foodSpawned(food);
 		m_foodMap.addElement(food);
 
@@ -398,11 +414,12 @@ void Field::addBotKilledCallback(Field::BotKilledCallback callback)
 	m_botKilledCallbacks.push_back(callback);
 }
 
-void Field::killBot(std::shared_ptr<Bot> victim, std::shared_ptr<Bot> killer)
+void Field::killBot(const Bot& victim, const Bot* killer)
 {
-	victim->getSnake().convertToFood(killer);
-	m_bots.erase(victim);
-	m_updateTracker->botKilled(killer, victim);
+	auto killer_id = (killer!=nullptr) ? killer->getGUID() : 0;
+	victim.getSnake().convertToFood(killer_id);
+	m_killed_bots.push_back(&victim);
+	m_updateTracker->botKilled(victim, killer);
 
 	// bot will eventually be recreated in callbacks
 	for (auto& callback: m_botKilledCallbacks)

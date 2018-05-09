@@ -10,12 +10,12 @@ struct LuaSegmentInfo
 {
 	public:
 		real_t x, y, r, d, dist;
-		LuaSegmentInfo(Bot* aBot, real_t aX,real_t aY, real_t aR, real_t aD, real_t aDist);
+		LuaSegmentInfo(const Bot* aBot, real_t aX,real_t aY, real_t aR, real_t aD, real_t aDist);
 		static void Register(sol::state& lua);
 
 		guid_t getBotId();
 		std::string moveFutures();
 
 	private:
-		Bot *m_bot;
+		const Bot *m_bot;
 };

@@ -2,7 +2,7 @@
 #include <sol.hpp>
 #include <Bot.h>
 
-LuaSegmentInfo::LuaSegmentInfo(Bot* aBot, real_t aX, real_t aY, real_t aR, real_t aD, real_t aDist)
+LuaSegmentInfo::LuaSegmentInfo(const Bot *aBot, real_t aX, real_t aY, real_t aR, real_t aD, real_t aDist)
 	: x(aX), y(aY), r(aR), d(aD), dist(aDist), m_bot(aBot)
 {
 }

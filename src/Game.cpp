@@ -44,22 +44,22 @@ Game::Game()
 	);
 
 	m_field->addBotKilledCallback(
-		[this](std::shared_ptr<Bot> victim, std::shared_ptr<Bot> killer)
+		[this](const Bot& victim, const Bot* killer)
 		{
 			long killer_id = (killer==nullptr) ? -1 : killer->getDatabaseId();
 			m_database->ReportBotKilled(
-				victim->getDatabaseId(),
-				victim->getDatabaseVersionId(),
-				victim->getStartFrame(),
+				victim.getDatabaseId(),
+				victim.getDatabaseVersionId(),
+				victim.getStartFrame(),
 				m_field->getCurrentFrame(),
 				killer_id,
-				victim->getSnake().getMass(),
-				victim->getConsumedNaturalFood(),
-				victim->getConsumedFoodHuntedByOthers(),
-				victim->getConsumedFoodHuntedBySelf()
+				victim.getSnake().getMass(),
+				victim.getConsumedNaturalFood(),
+				victim.getConsumedFoodHuntedByOthers(),
+				victim.getConsumedFoodHuntedBySelf()
 			);
 
-			createBot(victim->getDatabaseId());
+			createBot(victim.getDatabaseId());
 		}
 	);
 }
@@ -101,6 +101,7 @@ bool Game::OnTimerInterval()
 {
 	// do all the game logic here and send updates to clients
 
+	m_field->prepareFrame();
 	m_field->decayFood();
 	m_field->consumeFood();
 	m_field->removeFood();
@@ -113,6 +114,7 @@ bool Game::OnTimerInterval()
 
 	m_field->processLog();
 	m_field->tick();
+	m_field->garbageCollectBots();
 
 	// send differential update to all connected clients
 	std::string update = m_field->getUpdateTracker().serialize();
@@ -177,18 +179,12 @@ void Game::queryDB()
 		}
 	}
 
-	std::vector<std::shared_ptr<Bot>> kill_bots;
 	for (auto& bot: m_field->getBots())
 	{
 		if (std::find(active_ids.begin(), active_ids.end(), bot->getDatabaseId()) == active_ids.end())
 		{
-			kill_bots.push_back(bot);
+			m_field->killBot(*bot, bot); // suicide!
 		}
-	}
-
-	for (auto& bot: kill_bots)
-	{
-		m_field->killBot(bot, bot); // suicide!
 	}
 
 	for (auto& cmd: m_database->GetActiveCommands())
@@ -198,7 +194,7 @@ void Game::queryDB()
 			auto bot = m_field->getBotByDatabaseId(static_cast<int>(cmd.bot_id));
 			if (bot != nullptr)
 			{
-				m_field->killBot(bot, bot); // suicide!
+				m_field->killBot(*bot, bot); // suicide!
 				m_database->SetCommandCompleted(cmd.id, true, "killed");
 			}
 			else
@@ -222,10 +218,11 @@ void Game::createBot(int bot_id)
 	}
 
 	std::string initErrorMessage;
-	auto newBot = m_field->newBot(std::move(data), initErrorMessage);
+	auto databaseVersionId = data->version_id;
+	m_field->newBot(std::move(data), initErrorMessage);
 	if (!initErrorMessage.empty())
 	{
-		m_database->DisableBotVersion(newBot->getDatabaseVersionId(), initErrorMessage);
+		m_database->DisableBotVersion(databaseVersionId, initErrorMessage);
 		// TODO save error message, maybe lock version in inactive state
 	}
 }

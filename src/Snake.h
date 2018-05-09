@@ -116,7 +116,7 @@ class Snake
 		 * Convert this Snake to Food. This is normally the last action before the
 		 * Snake is removed from the Field.
 		 */
-		void convertToFood(const std::shared_ptr<Bot> &hunter) const;
+		void convertToFood(guid_t hunterId) const;
 
 		/*!
 		 * Drop food at the end of the Snake. Primarily used for mass loss during boost.
@@ -126,7 +126,7 @@ class Snake
 		 */
 		void dropFood(float_t value);
 
-		real_t getMass(void) { return m_mass; }
+		real_t getMass(void) const { return m_mass; }
 
 		real_t getConsumeRadius(void);
 

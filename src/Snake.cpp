@@ -195,12 +195,12 @@ bool Snake::canConsume(const Food &food)
 	return (headPos - unwrappedFoodPos).squaredNorm() < (maxRange*maxRange);
 }
 
-void Snake::convertToFood(const std::shared_ptr<Bot> &hunter) const
+void Snake::convertToFood(guid_t hunterId) const
 {
 	real_t foodPerSegment = m_mass / m_segments.size() * config::SNAKE_CONVERSION_FACTOR;
 
 	for(auto &s: m_segments) {
-		m_field->createDynamicFood(foodPerSegment, s.pos(), m_segmentRadius, hunter);
+		m_field->createDynamicFood(foodPerSegment, s.pos(), m_segmentRadius, hunterId);
 	}
 }
 
@@ -211,7 +211,7 @@ void Snake::dropFood(float_t value)
 
 	m_foodToDrop += value * config::SNAKE_CONVERSION_FACTOR;
 	if(m_foodToDrop >= config::FOOD_SIZE_MEAN) {
-		m_field->createDynamicFood(m_foodToDrop, dropPos, m_segmentRadius, nullptr);
+		m_field->createDynamicFood(m_foodToDrop, dropPos, m_segmentRadius, 0);
 		m_foodToDrop = 0;
 	}
 

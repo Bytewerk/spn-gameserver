@@ -62,7 +62,7 @@ class Bot : public IdentifyableObject
 		 * \returns   The Bot that this Bot collided with or NULL if no collision
 		 *            occurred.
 		 */
-		std::shared_ptr<Bot> checkCollision(void) const;
+		const Bot *checkCollision(void) const;
 
 		/*!
 		 * \brief increase log credit every frame, until config::LOG_MAX_CREDITS is reached
@@ -74,29 +74,26 @@ class Bot : public IdentifyableObject
 		const std::string &getName(void) const { return m_dbData->bot_name; }
 		real_t getHeading() { return m_heading; }
 		Field* getField() { return m_field; }
-		int getDatabaseId() { return m_dbData->bot_id; }
-		int getDatabaseVersionId() { return m_dbData->version_id; }
+		int getDatabaseId() const { return m_dbData->bot_id; }
+		int getDatabaseVersionId() const { return m_dbData->version_id; }
 		LuaBot& getLuaBot() { return *m_lua_bot; }
-		uint32_t getStartFrame() { return m_startFrame; }
+		uint32_t getStartFrame() const { return m_startFrame; }
 
-		real_t getConsumedNaturalFood(void) { return m_consumedNaturalFood; }
-		real_t getConsumedFoodHuntedByOthers(void) { return m_consumedFoodHuntedByOthers; }
-		real_t getConsumedFoodHuntedBySelf(void) { return m_consumedFoodHuntedBySelf; }
+		real_t getConsumedNaturalFood(void) const { return m_consumedNaturalFood; }
+		real_t getConsumedFoodHuntedByOthers(void) const { return m_consumedFoodHuntedByOthers; }
+		real_t getConsumedFoodHuntedBySelf(void) const { return m_consumedFoodHuntedBySelf; }
 
 		void updateConsumeStats(const Food &food);
 
-		uint64_t getViewerKey() { return m_dbData->viewer_key; }
+		uint64_t getViewerKey() const { return m_dbData->viewer_key; }
 
 		bool appendLogMessage(const std::string &data, bool checkCredit);
 		real_t getLogCredit() { return m_logCredit; }
 		std::vector<std::string> &getLogMessages() { return m_logMessages; }
 		void clearLogMessages() { m_logMessages.clear(); }
 
-		std::vector<uint32_t> getColors();
+		std::vector<uint32_t> getColors() const;
 		real_t getSightRadius() const;
-		uint32_t getFace();
-		uint32_t getDogTag();
-
-
-
+		uint32_t getFace() const;
+		uint32_t getDogTag() const;
 };

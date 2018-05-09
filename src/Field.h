@@ -22,15 +22,15 @@
 class Field
 {
 	public:
-		typedef std::set< std::shared_ptr<Bot> > BotSet;
-		typedef std::function< void(std::shared_ptr<Bot>, std::shared_ptr<Bot>) > BotKilledCallback;
+		typedef std::vector<Bot*> BotSet;
+		typedef std::function< void(const Bot& victim, const Bot* killer) > BotKilledCallback;
 
 	public:
 		struct SnakeSegmentInfo {
 			const Snake::Segment &segment; //!< Pointer to the segment
-			std::shared_ptr<Bot> bot; //!< The bot this segment belongs to
+			const Bot& bot; //!< The bot this segment belongs to
 
-			SnakeSegmentInfo(const Snake::Segment &s, const std::shared_ptr<Bot> &b)
+			SnakeSegmentInfo(const Snake::Segment &s, const Bot& b)
 				: segment(s), bot(b) {}
 
 			const Vector2D& pos() const { return segment.pos(); }
@@ -46,6 +46,7 @@ class Field
 		uint32_t m_currentFrame = 0;
 
 		BotSet  m_bots;
+		std::vector<const Bot*> m_killed_bots;
 
 		std::unique_ptr<std::mt19937> m_rndGen;
 
@@ -75,7 +76,9 @@ class Field
 		 * Create a new Bot on this field.
 		 * @return shared_ptr to the new bot; non-empty initErrorMessage if initialization failed
 		 */
-		std::shared_ptr<Bot> newBot(std::unique_ptr<db::BotScript> data, std::string &initErrorMessage);
+		void newBot(std::unique_ptr<db::BotScript> data, std::string &initErrorMessage);
+
+		void prepareFrame(void);
 
 		/*!
 		 * Decay all food.
@@ -114,6 +117,8 @@ class Field
 		 */
 		void tick();
 
+		void garbageCollectBots(void);
+
 		/*!
 		 * Send statistics to the UpdateTracker.
 		 */
@@ -123,7 +128,7 @@ class Field
 		 * Get the set of bots.
 		 */
 		const BotSet& getBots(void) const;
-		std::shared_ptr<Bot> getBotByDatabaseId(int id);
+		Bot *getBotByDatabaseId(int id);
 
 		/*!
 		 * Add dynamic food equally distributed in the given circle.
@@ -138,7 +143,7 @@ class Field
 		 *                     spawned from.
 		 */
 		void createDynamicFood(real_t totalValue, const Vector2D &center, real_t radius,
-				const std::shared_ptr<Bot> &hunter);
+				guid_t hunterId);
 
 		/*!
 		 * Wrap the coordinates of the given vector into the Fields unique area.
@@ -184,7 +189,7 @@ class Field
 		SegmentInfoMap& getSegmentInfoMap() { return m_segmentInfoMap; }
 
 		void addBotKilledCallback(BotKilledCallback callback);
-		void killBot(std::shared_ptr<Bot> victim, std::shared_ptr<Bot> killer);
+		void killBot(const Bot& victim, const Bot *killer);
 
 		UpdateTracker& getUpdateTracker() { return *m_updateTracker; }
 

@@ -59,13 +59,13 @@ namespace MsgPackProtocol
 
 	struct WorldUpdateMessage
 	{
-		Field::BotSet bots;
+		std::vector<Bot*> bots;
 		std::vector<Food> food;
 	};
 
 	struct BotSpawnMessage
 	{
-		std::shared_ptr<Bot> bot;
+		const Bot& bot;
 	};
 
 	struct BotMoveItem
@@ -201,7 +201,11 @@ namespace msgpack {
 					o.pack_array(4);
 					o.pack(MsgPackProtocol::PROTOCOL_VERSION);
 					o.pack(static_cast<int>(MsgPackProtocol::MESSAGE_TYPE_WORLD_UPDATE));
-					o.pack(v.bots);
+					o.pack_array(v.bots.size());
+					for (Bot* bot: v.bots)
+					{
+						o.pack(*bot);
+					}
 					o.pack(v.food);
 					return o;
 				}
@@ -404,20 +408,20 @@ namespace msgpack {
 				}
 			};
 
-			template <> struct pack< std::shared_ptr<Bot>>
+			template <> struct pack<Bot>
 			{
-				template <typename Stream> msgpack::packer<Stream>& operator()(msgpack::packer<Stream>& o, std::shared_ptr<Bot> const& v) const
+				template <typename Stream> msgpack::packer<Stream>& operator()(msgpack::packer<Stream>& o, const Bot& v) const
 				{
 					o.pack_array(9);
-					o.pack(v->getGUID());
-					o.pack(v->getName());
-					o.pack(v->getDatabaseVersionId());
-					o.pack(v->getFace());
-					o.pack(v->getDogTag());
-					o.pack(v->getColors());
-					o.pack(v->getSnake().getMass());
-					o.pack(v->getSnake().getSegmentRadius());
-					o.pack(v->getSnake().getSegments());
+					o.pack(v.getGUID());
+					o.pack(v.getName());
+					o.pack(v.getDatabaseVersionId());
+					o.pack(v.getFace());
+					o.pack(v.getDogTag());
+					o.pack(v.getColors());
+					o.pack(v.getSnake().getMass());
+					o.pack(v.getSnake().getSegmentRadius());
+					o.pack(v.getSnake().getSegments());
 					return o;
 				}
 			};

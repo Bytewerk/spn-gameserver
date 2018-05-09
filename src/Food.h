@@ -19,8 +19,7 @@ class Food : public IdentifyableObject, public PositionObject
 		/*!
 		 * Creates a new food pice at the given position and of the given value.
 		 */
-		Food(bool shallRegenerate, const Vector2D &pos, real_t value,
-				const std::shared_ptr<Bot> &hunter = nullptr);
+		Food(bool shallRegenerate, const Vector2D &pos, real_t value, guid_t hunter_id=0);
 
 		bool decay(void);
 		bool hasDecayed(void) const;
@@ -36,12 +35,11 @@ class Food : public IdentifyableObject, public PositionObject
 		 *
 		 * \returns A shared pointer to the hunting Bot.
 		 */
-		std::shared_ptr<Bot> getHunter(void) const { return m_hunter; }
+		guid_t getHunterId(void) const { return m_hunter; }
 
 	private:
 		real_t  m_value;
 		bool m_shallRegenerate;
 		bool m_shallBeRemoved;
-
-		std::shared_ptr<Bot> m_hunter;
+		guid_t m_hunter;
 };

@@ -45,17 +45,17 @@ std::size_t Bot::move(void)
 	return m_snake.move(m_heading, boost); // direction in degrees
 }
 
-std::shared_ptr<Bot> Bot::checkCollision(void) const
+const Bot* Bot::checkCollision(void) const
 {
 	real_t maxCollisionDistance =
 		m_snake.getSegmentRadius() + m_field->getMaxSegmentRadius();
 
 	Vector2D headPos = m_snake.getHeadPosition();
 
-	std::shared_ptr<Bot> retval = nullptr;
+	const Bot* retval = nullptr;
 	for (auto &fi: m_field->getSegmentInfoMap().getRegion(headPos, maxCollisionDistance))
 	{
-		if(fi.bot->getGUID() == this->getGUID())
+		if(fi.bot.getGUID() == this->getGUID())
 		{
 			// prevent self-collision
 			continue;
@@ -66,12 +66,12 @@ std::shared_ptr<Bot> Bot::checkCollision(void) const
 
 		// get maximum distance for collision detection
 		real_t collisionDist =
-			m_snake.getSegmentRadius() + fi.bot->getSnake().getSegmentRadius();
+			m_snake.getSegmentRadius() + fi.bot.getSnake().getSegmentRadius();
 		collisionDist *= collisionDist; // square it
 
 		if(dist < collisionDist) {
 			// collision detected!
-			retval = fi.bot;
+			retval = &fi.bot;
 			break;
 		}
 	}
@@ -81,12 +81,12 @@ std::shared_ptr<Bot> Bot::checkCollision(void) const
 
 void Bot::updateConsumeStats(const Food &food)
 {
-	std::shared_ptr<Bot> hunter = food.getHunter();
+	auto hunterId = food.getHunterId();
 
-	if(!hunter) {
-		// nullptr indicates natural food
+	if (hunterId == 0) {
+		// zero indicates natural food
 		m_consumedNaturalFood += food.getValue();
-	} else if(this->getGUID() == hunter->getGUID()) {
+	} else if (this->getGUID() == hunterId) {
 		// food was hunted by this bot
 		m_consumedFoodHuntedBySelf += food.getValue();
 	} else {
@@ -114,7 +114,7 @@ bool Bot::appendLogMessage(const std::string& data, bool checkCredit)
 	return true;
 }
 
-std::vector<uint32_t> Bot::getColors()
+std::vector<uint32_t> Bot::getColors() const
 {
 	return m_lua_bot->getColors();
 }
@@ -124,12 +124,12 @@ real_t Bot::getSightRadius() const
 	return 50.0f + 15.0f * getSnake().getSegmentRadius();
 }
 
-uint32_t Bot::getFace()
+uint32_t Bot::getFace() const
 {
 	return m_lua_bot->getFace();
 }
 
-uint32_t Bot::getDogTag()
+uint32_t Bot::getDogTag() const
 {
 	return m_lua_bot->getDogTag();
 }

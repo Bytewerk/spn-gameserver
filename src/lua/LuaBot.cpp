@@ -220,8 +220,8 @@ std::vector<LuaSegmentInfo>& LuaBot::apiFindSegments(real_t radius, bool include
 	auto field = m_bot.getField();
 	for (auto &segmentInfo: field->getSegmentInfoMap().getRegion(pos, radius + m_bot.getField()->getMaxSegmentRadius()))
 	{
-		if (!include_self && (segmentInfo.bot->getGUID() == self_id)) { continue; }		
-		real_t segmentRadius = segmentInfo.bot->getSnake().getSegmentRadius();
+		if (!include_self && (segmentInfo.bot.getGUID() == self_id)) { continue; }
+		real_t segmentRadius = segmentInfo.bot.getSnake().getSegmentRadius();
 		Vector2D relPos = field->unwrapRelativeCoords(segmentInfo.pos() - pos);
 		real_t distance = relPos.norm();
 		if (distance > (radius+segmentRadius)) { continue; }
@@ -230,7 +230,7 @@ std::vector<LuaSegmentInfo>& LuaBot::apiFindSegments(real_t radius, bool include
 		while (direction < -M_PI) { direction += 2*M_PI; }
 		while (direction >  M_PI) { direction -= 2*M_PI; }
 		m_luaSegmentInfoTable.emplace_back(
-			segmentInfo.bot.get(),
+			&segmentInfo.bot,
 			relPos.x(),
 			relPos.y(),
 			segmentRadius,

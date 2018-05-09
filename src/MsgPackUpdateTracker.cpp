@@ -24,39 +24,34 @@ MsgPackUpdateTracker::MsgPackUpdateTracker()
 	reset();
 }
 
-void MsgPackUpdateTracker::foodConsumed(const Food &food,
-		const std::shared_ptr<Bot> &by_bot)
+void MsgPackUpdateTracker::foodConsumed(const Food &food, const Bot& by_bot)
 {
-	m_foodConsumeMessage->items.push_back({food.getGUID(), by_bot->getGUID()});
+	m_foodConsumeMessage.items.push_back({food.getGUID(), by_bot.getGUID()});
 }
 
 void MsgPackUpdateTracker::foodDecayed(const Food &food)
 {
-	m_foodDecayMessage->food_ids.push_back(food.getGUID());
+	m_foodDecayMessage.food_ids.push_back(food.getGUID());
 }
 
 void MsgPackUpdateTracker::foodSpawned(const Food &food)
 {
-	m_foodSpawnMessage->new_food.push_back(food);
+	m_foodSpawnMessage.new_food.push_back(food);
 }
 
-void MsgPackUpdateTracker::botSpawned(const std::shared_ptr<Bot> &bot)
+void MsgPackUpdateTracker::botSpawned(const Bot& bot)
 {
-	MsgPackProtocol::BotSpawnMessage msg;
-	msg.bot = bot;
-
+	MsgPackProtocol::BotSpawnMessage msg { bot };
 	msgpack::sbuffer buf;
 	msgpack::pack(buf, msg);
 	appendMessage(buf);
 }
 
-void MsgPackUpdateTracker::botKilled(
-		const std::shared_ptr<Bot> &killer,
-		const std::shared_ptr<Bot> &victim)
+void MsgPackUpdateTracker::botKilled(const Bot &victim, const Bot *killer)
 {
 	MsgPackProtocol::BotKillMessage msg;
-	msg.killer_id = killer->getGUID();
-	msg.victim_id = victim->getGUID();
+	msg.killer_id = (killer!=nullptr) ? killer->getGUID() : victim.getGUID();
+	msg.victim_id = victim.getGUID();
 
 	msgpack::sbuffer buf;
 	msgpack::pack(buf, msg);
@@ -64,42 +59,42 @@ void MsgPackUpdateTracker::botKilled(
 
 	if (msg.killer_id == msg.victim_id)
 	{
-		botLogMessage(victim->getViewerKey(), std::string("reset."));
+		botLogMessage(victim.getViewerKey(), std::string("reset."));
 	}
 	else
 	{
-		botLogMessage(killer->getViewerKey(), std::string("you killed ") + victim->getName() + std::string("."));
-		botLogMessage(victim->getViewerKey(), std::string("you were killed by ") + killer->getName() + std::string("."));
+		botLogMessage(killer->getViewerKey(), std::string("you killed ") + victim.getName() + std::string("."));
+		botLogMessage(victim.getViewerKey(), std::string("you were killed by ") + killer->getName() + std::string("."));
 	}
 }
 
-void MsgPackUpdateTracker::botMoved(const std::shared_ptr<Bot> &bot, std::size_t steps)
+void MsgPackUpdateTracker::botMoved(const Bot &bot, std::size_t steps)
 {
 	// Fill BotMoveMessage
 	MsgPackProtocol::BotMoveItem item;
 
-	const Snake::SegmentList &segments = bot->getSnake().getSegments();
+	const Snake::SegmentList &segments = bot.getSnake().getSegments();
 
-	item.bot_id = bot->getGUID();
+	item.bot_id = bot.getGUID();
 	item.new_segments.assign(segments.begin(), segments.begin() + steps);
-	item.current_segment_radius = bot->getSnake().getSegmentRadius();
+	item.current_segment_radius = bot.getSnake().getSegmentRadius();
 	item.current_length = segments.size();
 
-	m_botMoveMessage->items.push_back(item);
+	m_botMoveMessage.items.push_back(item);
 
 	// Fill BotMoveHeadMessage
 	MsgPackProtocol::BotMoveHeadItem headItem;
 
-	headItem.bot_id = bot->getGUID();
-	headItem.mass = bot->getSnake().getMass();
-	headItem.new_head_positions = bot->getSnake().getHeadPositionsDuringLastMove();
+	headItem.bot_id = bot.getGUID();
+	headItem.mass = bot.getSnake().getMass();
+	headItem.new_head_positions = bot.getSnake().getHeadPositionsDuringLastMove();
 
-	m_botMoveHeadMessage->items.push_back(headItem);
+	m_botMoveHeadMessage.items.push_back(headItem);
 }
 
 void MsgPackUpdateTracker::botLogMessage(uint64_t viewerKey, const std::string& message)
 {
-	m_botLogMessage->items.push_back({viewerKey, message});
+	m_botLogMessage.items.push_back({viewerKey, message});
 }
 
 void MsgPackUpdateTracker::gameInfo(void)
@@ -125,7 +120,6 @@ void MsgPackUpdateTracker::worldState(Field& field)
 	MsgPackProtocol::WorldUpdateMessage msg;
 
 	msg.bots = field.getBots();
-
 	msg.food.reserve(1024);
 	for (auto& food: field.getFoodMap()) // TODO directly serialize FoodMap
 	{
@@ -146,65 +140,64 @@ void MsgPackUpdateTracker::tick(uint64_t frame_id)
 	appendMessage(buf);
 }
 
-void MsgPackUpdateTracker::botStats(const std::shared_ptr<Bot> &bot)
+void MsgPackUpdateTracker::botStats(const Bot &bot)
 {
 	MsgPackProtocol::BotStatsItem item;
 
-	item.bot_id = bot->getGUID();
-	item.natural_food_consumed = bot->getConsumedNaturalFood();
-	item.carrison_food_consumed = bot->getConsumedFoodHuntedByOthers();
-	item.hunted_food_consumed = bot->getConsumedFoodHuntedBySelf();
-	item.mass = bot->getSnake().getMass();
-
-	m_botStatsMessage->items.push_back(item);
+	item.bot_id = bot.getGUID();
+	item.natural_food_consumed = bot.getConsumedNaturalFood();
+	item.carrison_food_consumed = bot.getConsumedFoodHuntedByOthers();
+	item.hunted_food_consumed = bot.getConsumedFoodHuntedBySelf();
+	item.mass = bot.getSnake().getMass();
+	m_botStatsMessage.items.push_back(item);
 }
 
 std::string MsgPackUpdateTracker::serialize(void)
 {
 	// decayed food
-	if(!m_foodDecayMessage->food_ids.empty()) {
+	if(!m_foodDecayMessage.food_ids.empty()) {
 		msgpack::sbuffer buf;
 		msgpack::pack(buf, m_foodDecayMessage);
 		appendMessage(buf);
 	}
 
 	// spawned food
-	if(!m_foodSpawnMessage->new_food.empty()) {
+	if(!m_foodSpawnMessage.new_food.empty()) {
 		msgpack::sbuffer buf;
 		msgpack::pack(buf, m_foodSpawnMessage);
 		appendMessage(buf);
 	}
 
 	// consumed food
-	if(!m_foodConsumeMessage->items.empty()) {
+	if(!m_foodConsumeMessage.items.empty()) {
 		msgpack::sbuffer buf;
 		msgpack::pack(buf, m_foodConsumeMessage);
 		appendMessage(buf);
 	}
 
 	// moved bots
-	if(!m_botMoveMessage->items.empty()) {
+	if(!m_botMoveMessage.items.empty()) {
 		msgpack::sbuffer buf;
 		msgpack::pack(buf, m_botMoveMessage);
 		appendMessage(buf);
 	}
 
 	// moved bots (compressed version)
-	if(!m_botMoveHeadMessage->items.empty()) {
+	if(!m_botMoveHeadMessage.items.empty()) {
 		msgpack::sbuffer buf;
 		msgpack::pack(buf, m_botMoveHeadMessage);
 		appendMessage(buf);
 	}
 
 	// bot statistics
-	if(!m_botStatsMessage->items.empty()) {
+	if(!m_botStatsMessage.items.empty()) {
 		msgpack::sbuffer buf;
 		msgpack::pack(buf, m_botStatsMessage);
 		appendMessage(buf);
 	}
 
 	// log messages
-	if (!m_botLogMessage->items.empty()) {
+	if (!m_botLogMessage.items.empty()) {
 		msgpack::sbuffer buf;
 		msgpack::pack(buf, m_botLogMessage);
 		appendMessage(buf);
@@ -217,14 +210,13 @@ std::string MsgPackUpdateTracker::serialize(void)
 
 void MsgPackUpdateTracker::reset(void)
 {
-	m_foodConsumeMessage = std::make_unique<MsgPackProtocol::FoodConsumeMessage>();
-	m_foodSpawnMessage = std::make_unique<MsgPackProtocol::FoodSpawnMessage>();
-	m_foodDecayMessage = std::make_unique<MsgPackProtocol::FoodDecayMessage>();
-	m_botMoveMessage = std::make_unique<MsgPackProtocol::BotMoveMessage>();
-	m_botMoveHeadMessage = std::make_unique<MsgPackProtocol::BotMoveHeadMessage>();
-	m_botStatsMessage = std::make_unique<MsgPackProtocol::BotStatsMessage>();
-	m_botLogMessage = std::make_unique<MsgPackProtocol::BotLogMessage>();
-
+	m_foodConsumeMessage = MsgPackProtocol::FoodConsumeMessage();
+	m_foodSpawnMessage = MsgPackProtocol::FoodSpawnMessage();
+	m_foodDecayMessage = MsgPackProtocol::FoodDecayMessage();
+	m_botMoveMessage = MsgPackProtocol::BotMoveMessage();
+	m_botMoveHeadMessage = MsgPackProtocol::BotMoveHeadMessage();
+	m_botStatsMessage = MsgPackProtocol::BotStatsMessage();
+	m_botLogMessage = MsgPackProtocol::BotLogMessage();
 	m_stream.str("");
 }
 
