@@ -6,6 +6,7 @@
 
 #define DEBUG_POOLALLOCATOR_STATS
 //#define DEBUG_POOLALLOCATOR
+#define DEBUG_POOLALLOCATOR_OOM
 
 #ifdef DEBUG_POOLALLOCATOR
 #define PA_DEBUG(x) x
@@ -125,7 +126,11 @@ void* PoolAllocator::allocate(std::size_t bytes)
 	std::size_t startBlock = findFreeBlockSequence(blocks);
 
 	if(startBlock == SIZE_MAX) {
-		PA_DEBUG(std::cerr << "PoolAllocator: could not find " << blocks << " contiguous free blocks :(" << std::endl);
+#ifdef DEBUG_POOLALLOCATOR_OOM
+		std::cerr << "PoolAllocator: could not find " << blocks << " contiguous free blocks :(" << std::endl;
+		std::cerr << "Usage map:\n";
+		debugPrint();
+#endif
 		// out of memory :(
 		return nullptr;
 	}
