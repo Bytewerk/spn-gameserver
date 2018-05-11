@@ -101,10 +101,11 @@ bool Bot::appendLogMessage(const std::string& data, bool checkCredit)
 {
 	if (checkCredit)
 	{
-		if (m_logCredit<1) { return false; }
-		m_logCredit -= 1;
+		std::size_t usedCredit = data.size();
+		if (m_logCredit < usedCredit) { return false; }
+		m_logCredit -= usedCredit;
 	}
-	m_logMessages.push_back(data.substr(0, config::LOG_MAX_MESSAGE_SIZE));
+	m_logMessages.push_back(data);
 	return true;
 }
 

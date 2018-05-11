@@ -74,11 +74,10 @@ namespace config {
 	static const std::size_t LUA_MEM_POOL_SIZE_BYTES       = 10 * 1024*1024;
 	static const std::size_t LUA_MEM_POOL_BLOCK_SIZE_BYTES = 256;
 
-	// Log rate limiting for bots
-	static constexpr const real_t LOG_CREDITS_PER_FRAME = 0.2;
-	static constexpr const real_t LOG_INITIAL_CREDITS = 10;
-	static constexpr const real_t LOG_MAX_CREDITS = 50;
-	static constexpr const size_t LOG_MAX_MESSAGE_SIZE = 200;
+	// Log rate limiting for bots, in bytes
+	static constexpr const real_t LOG_CREDITS_PER_FRAME = 100.0;
+	static constexpr const real_t LOG_INITIAL_CREDITS = 1000.0;
+	static constexpr const real_t LOG_MAX_CREDITS = 10000.0;
 
 	// maximum number of colors a bot can have
 	static constexpr const size_t MAX_COLORS = 100;
